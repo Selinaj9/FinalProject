@@ -27,7 +27,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     private int lightStrength;
     private long lastDarkAttack;
     private long lastLightAttack;
-    private final long ATTACK_COOLDOWN = 1000;
+    private final long ATTACK_COOLDOWN = 500;
     private boolean eKeyHeld = false;
     private boolean spaceKeyHeld = false;
     private boolean[] pressedKeys;
@@ -190,33 +190,26 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
-
-        // Safeguard to ignore keys out of our array scope
         if (keyCode >= 0 && keyCode < pressedKeys.length) {
             pressedKeys[keyCode] = true;
         }
-
         long currentTime = System.currentTimeMillis();
-
-        // Dark Troop Attack (E)
         if (keyCode == KeyEvent.VK_E) {
             if (!eKeyHeld) {
                 if (currentTime - lastDarkAttack >= ATTACK_COOLDOWN) {
                     lastDarkAttack = currentTime;
-                    darkAttackAction();
+                    darkAttack();
                 }
-                eKeyHeld = true; // Locks until released
+                eKeyHeld = true;
             }
         }
-
-        // Light Troop Attack (L)
         if (keyCode == KeyEvent.VK_L) {
             if (!spaceKeyHeld) {
                 if (currentTime - lastLightAttack >= ATTACK_COOLDOWN) {
                     lastLightAttack = currentTime;
-                    lightAttackAction();
+                    lightAttack();
                 }
-                spaceKeyHeld = true; // Locks until released
+                spaceKeyHeld = true;
             }
         }
     }
@@ -224,33 +217,14 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     @Override
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
-
         if (key >= 0 && key < pressedKeys.length) {
             pressedKeys[key] = false;
         }
-
-        // Unlock Dark Troop attack
         if (key == KeyEvent.VK_E) {
             eKeyHeld = false;
         }
-
-        // Unlock Light Troop attack
         if (key == KeyEvent.VK_SPACE) {
             spaceKeyHeld = false;
-        }
-    }
-
-    // Separate processing action for Dark Troop
-    private void darkAttackAction() {
-        if (!gameOver && checkForDarkLightCollision()) {
-            lightHealth -= darkStrength;
-        }
-    }
-
-    // Separate processing action for Light Troop
-    private void lightAttackAction() {
-        if (!gameOver && checkForLightDarkCollision()) {
-            darkHealth -= lightStrength;
         }
     }
 
@@ -462,19 +436,16 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
             }
         }
     }
+    
+    private void darkAttack() {
+        if (!gameOver && checkForDarkLightCollision()) {
+            lightHealth -= darkStrength;
+        }
+    }
 
-    private void attack() {
-        if (!gameOver) {
-            if (checkForDarkLightCollision()) {
-                if (pressedKeys[KeyEvent.VK_E]) {
-                    lightHealth -= darkStrength;
-                }
-            }
-            if (checkForLightDarkCollision()) {
-                if (pressedKeys[KeyEvent.VK_L]) {
-                    darkHealth -= lightStrength;
-                }
-            }
+    private void lightAttack() {
+        if (!gameOver && checkForLightDarkCollision()) {
+            darkHealth -= lightStrength;
         }
     }
 
