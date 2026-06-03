@@ -4,7 +4,7 @@ public class Main {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Game");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(893, 500);
+        frame.setSize(908, 520);
         frame.setLocationRelativeTo(null);
 
         // create a DisplayPanel object

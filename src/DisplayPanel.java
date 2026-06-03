@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.function.BiFunction;
 
 public class DisplayPanel extends JPanel implements MouseListener, KeyListener, ActionListener {
     private boolean yellowColor;
@@ -14,6 +15,9 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     private BufferedImage lightTroop;
     private BufferedImage health;
     private BufferedImage strength;
+    private BufferedImage debuff;
+    private BufferedImage poison;
+    private BufferedImage weaken;
     private int darkTroopX;
     private int darkTroopY;
     private int lightTroopX;
@@ -25,8 +29,12 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     private boolean[] pressedKeys;
     private ArrayList<Point> healths;
     private ArrayList<Point> strengths;
+    private ArrayList<Point> debuffs;
+    private ArrayList<Point> poisons;
+    private ArrayList<Point> weakens;
     private boolean gameOver;
     private Timer timer;
+    private Timer attackTimer;
     private Timer buffTimer;
     private JButton resetButton;
 
@@ -43,8 +51,12 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         pressedKeys = new boolean[128];
         healths = new ArrayList<>();
         strengths = new ArrayList<>();
+        debuffs = new ArrayList<>();
+        poisons = new ArrayList<>();
+        weakens = new ArrayList<>();
         gameOver = false;
         timer = new Timer(10,this);
+        attackTimer = new Timer(50, this);
         buffTimer = new Timer(1500, this);
         try {
             background = ImageIO.read(new File("src/background.jpg"));
@@ -65,8 +77,24 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
             strength = ImageIO.read(new File("src/strength.png"));
         } catch (IOException e) {
             System.out.println(e.getMessage());
-        }try {
+        }
+        try {
             health = ImageIO.read(new File("src/health.png"));
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            debuff = ImageIO.read(new File("src/debuff.png"));
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            poison = ImageIO.read(new File("src/poison.png"));
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        try {
+            weaken = ImageIO.read(new File("src/weaken.png"));
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -80,6 +108,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         setFocusable(true); // this line of code + one below makes this panel active for keylistener events
         requestFocusInWindow(); // see comment above
         timer.start();
+        attackTimer.start();
         buffTimer.start();
     }
 
@@ -117,6 +146,15 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         }
         for (Point s : strengths) {
             g.drawImage(strength, s.x, s.y, null);
+        }
+        for (Point d : debuffs) {
+            g.drawImage(debuff, d.x, d.y, null);
+        }
+        for (Point p : poisons) {
+            g.drawImage(poison, p.x, p.y, null);
+        }
+        for (Point w : weakens) {
+            g.drawImage(weaken, w.x, w.y, null);
         }
     }
 
@@ -207,11 +245,17 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         int x = (int) (Math.random() * 780 + 10);
         int y = (int) (Math.random() * 340 + 30);
         Point point = new Point(x,y);
-        int ran = (int) (Math.random() * 2 + 1);
+        int ran = (int) (Math.random() * 5 + 1);
         if (ran == 1) {
             strengths.add(point);
-        } else {
+        } else if (ran == 2) {
             healths.add(point);
+        } else if (ran == 3) {
+            debuffs.add(point);
+        } else if (ran == 4) {
+            poisons.add(point);
+        } else if (ran == 5) {
+            weakens.add(point);
         }
         repaint();
     }
@@ -275,6 +319,37 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 i--;
             }
         }
+        for (int i = 0; i < debuffs.size(); i++) {
+            Rectangle buffRect = buffRect(debuffs.get(i));
+            if (darkRect.intersects(buffRect)) {
+                darkHealth -= (int) (Math.random() * (darkHealth - 10) + 1);
+                darkStrength -= (int) (Math.random() * (darkStrength - 10) + 1);
+                debuffs.remove(i);
+                i--;
+                if (darkStrength < 1) {
+                    darkStrength = 1;
+                }
+            }
+        }
+        for (int i = 0; i < poisons.size(); i++) {
+            Rectangle buffRect = buffRect(poisons.get(i));
+            if (darkRect.intersects(buffRect)) {
+                darkHealth -= (int) (Math.random() * 10 + 1);
+                poisons.remove(i);
+                i--;
+            }
+        }
+        for (int i = 0; i < weakens.size(); i++) {
+            Rectangle buffRect = buffRect(weakens.get(i));
+            if (darkRect.intersects(buffRect)) {
+                darkStrength -= (int) (Math.random() * 10 + 1);
+                weakens.remove(i);
+                i--;
+                if (darkStrength < 1) {
+                    darkStrength = 1;
+                }
+            }
+        }
     }
 
     private void checkForLightBuffCollision() {
@@ -293,6 +368,37 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 lightHealth += (int) (Math.random() * 10 + 1);
                 healths.remove(i);
                 i--;
+            }
+        }
+        for (int i = 0; i < debuffs.size(); i++) {
+            Rectangle buffRect = buffRect(debuffs.get(i));
+            if (lightRect.intersects(buffRect)) {
+                lightHealth -= (int) (Math.random() * (lightHealth - 10) + 1);
+                lightStrength -= (int) (Math.random() * (lightStrength - 10) + 1);
+                debuffs.remove(i);
+                i--;
+                if (lightStrength < 1) {
+                    lightStrength = 1;
+                }
+            }
+        }
+        for (int i = 0; i < poisons.size(); i++) {
+            Rectangle buffRect = buffRect(poisons.get(i));
+            if (lightRect.intersects(buffRect)) {
+                lightHealth -= (int) (Math.random() * 10 + 1);
+                poisons.remove(i);
+                i--;
+            }
+        }
+        for (int i = 0; i < weakens.size(); i++) {
+            Rectangle buffRect = buffRect(weakens.get(i));
+            if (lightRect.intersects(buffRect)) {
+                lightStrength -= (int) (Math.random() * 10 + 1);
+                weakens.remove(i);
+                i--;
+                if (lightStrength < 1) {
+                    lightStrength = 1;
+                }
             }
         }
     }
@@ -317,14 +423,17 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         if (e.getSource() == timer) {
             moveDarkTroop();
             moveLightTroop();
-            checkForDarkBuffCollision();
-            checkForLightBuffCollision();
             if (lightHealth <= 0 || darkHealth <= 0) {
                 gameOver = true;
                 timer.stop();
+                attackTimer.stop();
                 buffTimer.stop();
             }
             repaint();
+        }
+        if (e.getSource() == attackTimer) {
+            checkForDarkBuffCollision();
+            checkForLightBuffCollision();
         }
         if (e.getSource() == buffTimer) {
             createBuffs();
@@ -346,8 +455,12 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         lightStrength = 1;
         healths = new ArrayList<>();
         strengths = new ArrayList<>();
+        debuffs = new ArrayList<>();
+        poisons = new ArrayList<>();
+        weakens = new ArrayList<>();
         requestFocusInWindow();  // must request focus since clicking the JButton shifts key focus from the DisplayPanel to the JFrame
         timer.start();
+        attackTimer.start();
         buffTimer.start();
     }
 }
