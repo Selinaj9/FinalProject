@@ -25,12 +25,19 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     private int lightHealth;
     private int darkStrength;
     private int lightStrength;
+    private long lastDarkAttack;
+    private long lastLightAttack;
+    private final long ATTACK_COOLDOWN = 1000;
+    private boolean eKeyHeld = false;
+    private boolean spaceKeyHeld = false;
     private boolean[] pressedKeys;
     private ArrayList<Point> healths;
     private ArrayList<Point> strengths;
     private ArrayList<Point> curses;
     private ArrayList<Point> poisons;
     private ArrayList<Point> weakens;
+    private boolean darkAttacking;
+    private boolean lightAttacking;
     private boolean gameOver;
     private Timer timer;
     private Timer buffTimer;
@@ -46,15 +53,19 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         lightHealth = 100;
         darkStrength = 1;
         lightStrength = 1;
+        lastDarkAttack = 0;
+        lastLightAttack = 0;
         pressedKeys = new boolean[128];
         healths = new ArrayList<>();
         strengths = new ArrayList<>();
         curses = new ArrayList<>();
         poisons = new ArrayList<>();
         weakens = new ArrayList<>();
+        darkAttacking = false;
+        lightAttacking = false;
         gameOver = false;
         timer = new Timer(10,this);
-        buffTimer = new Timer(1500, this);
+        buffTimer = new Timer(2500, this);
         try {
             background = ImageIO.read(new File("src/background.jpg"));
         } catch (IOException e) {
@@ -174,20 +185,73 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     public void mouseExited(MouseEvent e) { } // unimplemented
 
     @Override
-    public void keyTyped(KeyEvent e) {
-        attack();
-    }
+    public void keyTyped(KeyEvent e) { }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        pressedKeys[keyCode] = true;
+
+        // Safeguard to ignore keys out of our array scope
+        if (keyCode >= 0 && keyCode < pressedKeys.length) {
+            pressedKeys[keyCode] = true;
+        }
+
+        long currentTime = System.currentTimeMillis();
+
+        // Dark Troop Attack (E)
+        if (keyCode == KeyEvent.VK_E) {
+            if (!eKeyHeld) {
+                if (currentTime - lastDarkAttack >= ATTACK_COOLDOWN) {
+                    lastDarkAttack = currentTime;
+                    darkAttackAction();
+                }
+                eKeyHeld = true; // Locks until released
+            }
+        }
+
+        // Light Troop Attack (L)
+        if (keyCode == KeyEvent.VK_L) {
+            if (!spaceKeyHeld) {
+                if (currentTime - lastLightAttack >= ATTACK_COOLDOWN) {
+                    lastLightAttack = currentTime;
+                    lightAttackAction();
+                }
+                spaceKeyHeld = true; // Locks until released
+            }
+        }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
-        pressedKeys[key] = false;
+
+        if (key >= 0 && key < pressedKeys.length) {
+            pressedKeys[key] = false;
+        }
+
+        // Unlock Dark Troop attack
+        if (key == KeyEvent.VK_E) {
+            eKeyHeld = false;
+        }
+
+        // Unlock Light Troop attack
+        if (key == KeyEvent.VK_SPACE) {
+            spaceKeyHeld = false;
+        }
+    }
+
+    // Separate processing action for Dark Troop
+    private void darkAttackAction() {
+        if (!gameOver && checkForDarkLightCollision()) {
+            lightHealth -= darkStrength;
+        }
+    }
+
+    // Separate processing action for Light Troop
+    private void lightAttackAction() {
+        if (!gameOver && checkForLightDarkCollision()) {
+            darkHealth -= lightStrength;
+        }
     }
 
     private void moveDarkTroop() {
@@ -291,7 +355,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         return darkRect.intersects(lightHit);
     }
 
-    private boolean checkForLightDarkCollison() {
+    private boolean checkForLightDarkCollision() {
         Rectangle darkHit = darkHitBox();
         Rectangle lightRect = lightRect();
         return lightRect.intersects(darkHit);
@@ -406,7 +470,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                     lightHealth -= darkStrength;
                 }
             }
-            if (checkForLightDarkCollison()) {
+            if (checkForLightDarkCollision()) {
                 if (pressedKeys[KeyEvent.VK_L]) {
                     darkHealth -= lightStrength;
                 }
