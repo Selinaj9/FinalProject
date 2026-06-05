@@ -139,9 +139,13 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
         g.drawString("Light Strength: " + lightStrength, lightTroopX - 30, lightTroopY);
         if (gameOver) {
             g.setFont(new Font("Arial", Font.BOLD, 32));
-            if (lightHealth <= 0) {
+            if (lightHealth <= 0 && darkHealth <= 0) {
+                g.drawString("GAME OVER, TIE!", 300, 240);
+            } else if (lightHealth <= 0) {
+                g.setColor(Color.BLACK);
                 g.drawString("GAME OVER, Dark WINS!", 250, 240);
             } else if (darkHealth <= 0) {
+                g.setColor(Color.WHITE);
                 g.drawString("GAME OVER, Light WINS", 250, 240);
             }
             resetButton.setVisible(true);
@@ -203,7 +207,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 eKeyHeld = true;
             }
         }
-        if (keyCode == KeyEvent.VK_L) {
+        if (keyCode == KeyEvent.VK_SPACE) {
             if (!spaceKeyHeld) {
                 if (currentTime - lastLightAttack >= ATTACK_COOLDOWN) {
                     lastLightAttack = currentTime;
@@ -351,6 +355,9 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 darkHealth += (int) (Math.random() * 10 + 1);
                 healths.remove(i);
                 i--;
+                if (darkHealth > 100) {
+                    darkHealth = 100;
+                }
             }
         }
         for (int i = 0; i < curses.size(); i++) {
@@ -371,6 +378,9 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 darkHealth -= (int) (Math.random() * 10 + 1);
                 poisons.remove(i);
                 i--;
+                if (darkHealth < 0) {
+                    darkHealth = 0;
+                }
             }
         }
         for (int i = 0; i < weakens.size(); i++) {
@@ -402,6 +412,9 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 lightHealth += (int) (Math.random() * 10 + 1);
                 healths.remove(i);
                 i--;
+                if (lightHealth > 100) {
+                    lightHealth = 100;
+                }
             }
         }
         for (int i = 0; i < curses.size(); i++) {
@@ -422,6 +435,9 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
                 lightHealth -= (int) (Math.random() * 10 + 1);
                 poisons.remove(i);
                 i--;
+                if (lightHealth < 0) {
+                    lightHealth = 0;
+                }
             }
         }
         for (int i = 0; i < weakens.size(); i++) {
@@ -439,13 +455,27 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     
     private void darkAttack() {
         if (!gameOver && checkForDarkLightCollision()) {
-            lightHealth -= darkStrength;
+            int ran = (int) (Math.random() * 2 + 1);
+            if (ran == 2) {
+                int dmg = (int) (darkStrength * (1 + 50.0 / 100));
+                lightHealth -= dmg;
+                getGraphics().drawString("-" + dmg, lightTroopX, lightTroopY);
+            } else {
+                lightHealth -= darkStrength;
+            }
         }
     }
 
     private void lightAttack() {
         if (!gameOver && checkForLightDarkCollision()) {
-            darkHealth -= lightStrength;
+            int ran = (int) (Math.random() * 2 + 1);
+            if (ran == 2) {
+                int dmg = (int) (lightStrength * (1 + 50.0 / 100));
+                darkHealth -= dmg;
+                getGraphics().drawString("-" + dmg, darkTroopX, darkTroopY);
+            } else {
+                darkHealth -= lightStrength;
+            }
         }
     }
 
@@ -472,6 +502,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener, 
     }
 
     private void reset() {
+        yellowColor = true;
         gameOver = false;
         darkTroopX = 10;
         darkTroopY = 200;
